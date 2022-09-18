@@ -111,16 +111,35 @@ class Boid {
     }
   
     show() {
-      strokeWeight(2);
+
       stroke(255);
       push();
       translate(this.position.x, this.position.y);
       rotate(atan2(this.velocity.y, this.velocity.x));
-      //body
-      line(-5, 0, 5, 0);
+      // scale(5);
+      // body
+      strokeWeight(1);
+      line(2, 0, -2, 0);
+      // tail
+      strokeWeight(1);
+      line(2, 0, -4, 1);
+      line(2, 0, -4, -1);
+
       //wings
-      line(0, 0, -3, 4);
-      line(0, 0, -3, -4);
+      stroke(255);
+      strokeWeight(1);
+      line(0, 0, 1, 3);
+      line(0, 0, 1, -3);
+      line(-1, 0, 1, 3);
+      line(-1, 0, 1, -3);
+      strokeWeight(1);
+      line(1, 3, 0, 5);
+      line(1, -3, 0, -5);
+
+      // head
+      stroke(255,0,0);
+      // strokeWeight(1);
+      point(1, 0);
       // point(this.position.x, this.position.y);
       pop();
     }
