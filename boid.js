@@ -111,9 +111,18 @@ class Boid {
     }
   
     show() {
-      strokeWeight(6);
+      strokeWeight(2);
       stroke(255);
-      point(this.position.x, this.position.y);
+      push();
+      translate(this.position.x, this.position.y);
+      rotate(atan2(this.velocity.y, this.velocity.x));
+      //body
+      line(-5, 0, 5, 0);
+      //wings
+      line(0, 0, -3, 4);
+      line(0, 0, -3, -4);
+      // point(this.position.x, this.position.y);
+      pop();
     }
   }
   
