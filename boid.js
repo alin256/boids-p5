@@ -90,6 +90,7 @@ class Boid {
     }
   
     flock(boids) {
+      this.maxSpeed = maxSpeedSlider.value();
       let alignment = this.align(boids);
       let cohesion = this.cohesion(boids);
       let separation = this.separation(boids);
