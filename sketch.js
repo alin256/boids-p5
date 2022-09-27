@@ -11,7 +11,7 @@ function setup() {
   createCanvas(900, 600);
   frameRate(60);
   createDiv('max speed');
-  maxSpeedSlider = (0, 6, 5, 0.1);
+  maxSpeedSlider = createSlider(0, 6, 5, 0.1);
   createDiv('alignment mult');
   alignSlider = createSlider(0, 2, 1.5, 0.1);
   createDiv('cohesion mult');
