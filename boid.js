@@ -9,8 +9,10 @@ class Boid {
       this.velocity = p5.Vector.random2D();
       this.velocity.setMag(random(2, 4));
       this.acceleration = createVector();
-      this.maxForce = 0.2;
+      // this.maxForce = 0.2;
       this.maxSpeed = 5;
+      this.minSpeed = this.maxSpeed / 2;
+      this.maxForce = this.minSpeed / 2;
     }
   
     edges() {
@@ -27,7 +29,7 @@ class Boid {
     }
   
     align(boids) {
-      let perceptionRadius = 25;
+      let perceptionRadius = 50;
       let steering = createVector();
       let total = 0;
       for (let other of boids) {
@@ -39,15 +41,15 @@ class Boid {
       }
       if (total > 0) {
         steering.div(total);
-        steering.setMag(this.maxSpeed);
-        steering.sub(this.velocity);
-        steering.limit(this.maxForce);
+        // steering.setMag(this.maxSpeed);
+        // steering.sub(this.velocity);
+        // steering.limit(this.maxForce);
       }
       return steering;
     }
   
     separation(boids) {
-      let perceptionRadius = 24;
+      let perceptionRadius = 50;
       let steering = createVector();
       let total = 0;
       for (let other of boids) {
@@ -61,9 +63,9 @@ class Boid {
       }
       if (total > 0) {
         steering.div(total);
-        steering.setMag(this.maxSpeed);
-        steering.sub(this.velocity);
-        steering.limit(this.maxForce);
+        // steering.setMag(this.maxSpeed);
+        // steering.sub(this.velocity);
+        // steering.limit(this.maxForce);
       }
       return steering;
     }
@@ -82,15 +84,17 @@ class Boid {
       if (total > 0) {
         steering.div(total);
         steering.sub(this.position);
-        steering.setMag(this.maxSpeed);
-        steering.sub(this.velocity);
-        steering.limit(this.maxForce);
+        // steering.setMag(this.maxSpeed);
+        // steering.sub(this.velocity);
+        // steering.limit(this.maxForce);
       }
       return steering;
     }
   
     flock(boids) {
       this.maxSpeed = maxSpeedSlider.value();
+      this.minSpeed = maxSpeedSlider.value() / 2;
+      this.maxForce = maxAccelerationSlider.value();
       let alignment = this.align(boids);
       let cohesion = this.cohesion(boids);
       let separation = this.separation(boids);
@@ -105,9 +109,15 @@ class Boid {
     }
   
     update() {
-      this.position.add(this.velocity);
+      let absVelocity = this.velocity.mag();
+      if (absVelocity < this.minSpeed) {
+        this.acceleration.add(this.velocity.copy().normalize().mult(this.minSpeed - absVelocity));
+      }
+      this.acceleration.limit(this.maxForce);
+      
       this.velocity.add(this.acceleration);
       this.velocity.limit(this.maxSpeed);
+      this.position.add(this.velocity);
       this.acceleration.mult(0);
     }
   
