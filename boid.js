@@ -111,7 +111,7 @@ class Boid {
     update() {
       let absVelocity = this.velocity.mag();
       if (absVelocity < this.minSpeed) {
-        this.acceleration.add(this.velocity.copy().normalize().mult(this.minSpeed - absVelocity));
+        this.acceleration.add(this.velocity.copy().normalize().mult(this.minSpeed / 2));
       }
       this.acceleration.limit(this.maxForce);
       
