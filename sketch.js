@@ -9,17 +9,17 @@ let maxSpeedSlider, maxAccelerationSlider, alignSlider, cohesionSlider, separati
 
 function setup() {
   createCanvas(900, 600);
-  frameRate(60);
+  frameRate(5);
   createDiv('max speed');
-  maxSpeedSlider = createSlider(0, 6, 5, 0.1);
+  maxSpeedSlider = createSlider(0, 6, 3, 0.1);
   createDiv('max acceleration');
-  maxAccelerationSlider = createSlider(0, 6, 2.5, 0.1);
+  maxAccelerationSlider = createSlider(0, 6, 2, 0.1);
   createDiv('alignment mult');
-  alignSlider = createSlider(0, 8, 1.5, 0.1);
+  alignSlider = createSlider(0, 8, 0, 0.1);
   createDiv('cohesion mult');
   cohesionSlider = createSlider(0, 8, 1, 0.1);
   createDiv('separation mult');
-  separationSlider = createSlider(0, 8, 2, 0.1);
+  separationSlider = createSlider(0, 8, 1, 0.1);
   for (let i = 0; i < 200; i++) {
     flock.push(new Boid());
   }
@@ -32,6 +32,9 @@ function draw() {
     boid.edges();
     boid.flock(flock);
     boid.update();
+    break;
+  }
+  for (let boid of flock) {
     boid.show();
   }  
 }

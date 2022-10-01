@@ -10,9 +10,14 @@ class Boid {
       this.velocity.setMag(random(2, 4));
       this.acceleration = createVector();
       // this.maxForce = 0.2;
+      this.radius = 5;
+      this.comfortZone = 15;
+      this.perceptionRadius = 50;
       this.maxSpeed = 5;
       this.minSpeed = this.maxSpeed / 2;
       this.maxForce = this.minSpeed / 2;
+      this.forceVectors = [];
+      this.touched = false;
     }
   
     edges() {
@@ -49,29 +54,35 @@ class Boid {
     }
   
     separation(boids) {
-      let perceptionRadius = 50;
+      // let perceptionRadius = 50;
       let steering = createVector();
-      let total = 0;
+      // let total = 0;
+
       for (let other of boids) {
-        let d = dist(this.position.x, this.position.y, other.position.x, other.position.y);
-        if (other != this && d < perceptionRadius) {
-          let diff = p5.Vector.sub(this.position, other.position);
-          diff.div(d * d);
-          steering.add(diff);
-          total++;
+        let distance = dist(this.position.x, this.position.y, other.position.x, other.position.y);
+        let avoidanceRadius = this.comfortZone + other.radius;
+        if (other != this && distance < avoidanceRadius) {
+          let diffVec = p5.Vector.sub(this.position, other.position);
+          diffVec.div(distance * distance);
+          // now it's length is 1 / distance
+          diffVec.mult(avoidanceRadius);
+          // Now multiplied by radius
+          steering.add(diffVec);
+          this.forceVectors.push([diffVec, [255, 0, 0]]);
+          // total++;
         }
       }
-      if (total > 0) {
-        steering.div(total);
-        // steering.setMag(this.maxSpeed);
-        // steering.sub(this.velocity);
-        // steering.limit(this.maxForce);
-      }
+      // if (total > 0) {
+      //   steering.div(total);
+      //   // steering.setMag(this.maxSpeed);
+      //   // steering.sub(this.velocity);
+      //   // steering.limit(this.maxForce);
+      // }
       return steering;
     }
   
     cohesion(boids) {
-      let perceptionRadius = 50;
+      const perceptionRadius = this.perceptionRadius;
       let steering = createVector();
       let total = 0;
       for (let other of boids) {
@@ -79,6 +90,7 @@ class Boid {
         if (other != this && d < perceptionRadius) {
           steering.add(other.position);
           total++;
+          other.touched = true;
         }
       }
       if (total > 0) {
@@ -88,6 +100,7 @@ class Boid {
         // steering.sub(this.velocity);
         // steering.limit(this.maxForce);
       }
+      this.forceVectors.push([steering, [255, 255, 0]]);
       return steering;
     }
   
@@ -95,6 +108,9 @@ class Boid {
       this.maxSpeed = maxSpeedSlider.value();
       this.minSpeed = maxSpeedSlider.value() / 2;
       this.maxForce = maxAccelerationSlider.value();
+
+      this.forceVectors = [];
+
       let alignment = this.align(boids);
       let cohesion = this.cohesion(boids);
       let separation = this.separation(boids);
@@ -111,7 +127,9 @@ class Boid {
     update() {
       let absVelocity = this.velocity.mag();
       if (absVelocity < this.minSpeed) {
-        this.acceleration.add(this.velocity.copy().normalize().mult(this.minSpeed / 2));
+        const speedUpVector = this.velocity.copy().normalize().mult(this.minSpeed / 2)
+        this.forceVectors.push([speedUpVector, [0, 255, 0]]);
+        this.acceleration.add(speedUpVector);
       }
       this.acceleration.limit(this.maxForce);
       
@@ -152,7 +170,38 @@ class Boid {
       // strokeWeight(1);
       point(1, 0);
       // point(this.position.x, this.position.y);
+      stroke(0, 255, 0);
+      strokeWeight(1);
+      
+      if (this.touched) {
+        stroke(255, 0, 0, 150);
+      }
+      else{
+        stroke(255, 0, 0, 50);
+      }
+      strokeWeight(1);
+      noFill();
+      ellipse(0, 0, (this.comfortZone + this.radius));
+
+      if (this.forceVectors.length > 0) {
+        stroke(255, 255, 0, 100);
+        strokeWeight(1);
+        noFill();
+        ellipse(0, 0, (this.perceptionRadius)*2 - this.comfortZone - this.radius);
+      }
+
       pop();
+
+      // auxiliary visualization of force vectors
+      strokeWeight(1);
+      for (let forceVector of this.forceVectors) {
+        let forcePart = forceVector[0];
+        let colorPart = forceVector[1];
+        stroke(colorPart);
+        line(this.position.x, this.position.y, 
+          this.position.x + forcePart.x*5, this.position.y + forcePart.y*5 );
+      }
+      this.touched = false;
     }
   }
   
