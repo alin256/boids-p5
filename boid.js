@@ -12,9 +12,13 @@ class Boid {
       // this.maxForce = 0.2;
       this.radius = 5;
       this.comfortZone = 15;
-      this.perceptionRadius = 50;
+
       this.avoidanceRadius = this.comfortZone + this.radius;
-      this.directionalPerceptionRadius = this.perceptionRadius - this.comfortZone;
+      this.directionalPerceptionRadius = this.avoidanceRadius * 1.5;
+      this.perceptionRadius = this.avoidanceRadius * 2;
+      
+      // this.directionalPerceptionRadius = this.perceptionRadius - this.comfortZone;
+
       this.maxSpeed = 5;
       this.minSpeed = this.maxSpeed / 2;
       this.maxForce = this.minSpeed / 2;
@@ -43,7 +47,7 @@ class Boid {
       for (let other of boids) {
         let d = dist(this.position.x, this.position.y, other.position.x, other.position.y);
         if (other != this && d < perceptionRadius) {
-          let accelVector = other.velocity.copy().div(this.maxSpeed).mult(this.avoidanceRadius / 2);
+          let accelVector = other.velocity.copy();
           steering.add(accelVector);
           total++;
           this.forceVectors.push([accelVector, [0 , 255, 255]]);
@@ -58,22 +62,21 @@ class Boid {
       return steering;
     }
   
-    symmetricPoint(point, center, radius, attraction = false) {
+    symmetricPoint(point, center, radius, attractionMult = 0.0) {
       let diffVec = p5.Vector.sub(point, center);
       let vecMag = p5.Vector.mag(diffVec);
       // let correctedVec = diffVec.copy();
       // diffVec.normalize();
       // diffVec.mult(radius * radius / vecMag / vecMag);
-      if (attraction || vecMag < radius) {
-        diffVec.mult(radius * (radius - vecMag) / vecMag / vecMag);
-      } else {
-        return createVector();
-      }
+      diffVec.mult(radius * (radius - vecMag) / vecMag / vecMag);
+      if (vecMag > radius) {
+        diffVec.mult(attractionMult);
+      } 
       // return [diffVec.add(center), correctedVec.add(center)];
       return diffVec;
     }
 
-    separation(boids, attraction = true) {
+    separation(boids, attractionMult = 1.0) {
       // let perceptionRadius = 50;
       let steering = createVector();
       let total = 0;
@@ -89,7 +92,7 @@ class Boid {
           // diffVec.mult(this.avoidanceRadius);
           // // Now multiplied by radius
 
-          let diffVec = this.symmetricPoint(this.position, other.position, this.avoidanceRadius, attraction);
+          let diffVec = this.symmetricPoint(this.position, other.position, this.avoidanceRadius, attractionMult);
 
           this.forceVectors.push([diffVec, [255, 0, 0]]);
 
@@ -138,7 +141,7 @@ class Boid {
 
       let alignment = this.align(boids);
       // let cohesion = this.cohesion(boids);
-      let separation = this.separation(boids);
+      let separation = this.separation(boids, cohesionSlider.value() / separationSlider.value());
   
       alignment.mult(alignSlider.value());
       // cohesion.mult(cohesionSlider.value());
@@ -182,7 +185,7 @@ class Boid {
       if (drawAuxiliary) {
         this.drawAuxiliaryGlobal();
       }
-      
+
       this.even = !this.even;
     }
 
