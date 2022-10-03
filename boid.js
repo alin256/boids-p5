@@ -13,11 +13,14 @@ class Boid {
       this.radius = 5;
       this.comfortZone = 15;
       this.perceptionRadius = 50;
+      this.avoidanceRadius = this.comfortZone + this.radius;
+      this.directionalPerceptionRadius = this.perceptionRadius - this.comfortZone;
       this.maxSpeed = 5;
       this.minSpeed = this.maxSpeed / 2;
       this.maxForce = this.minSpeed / 2;
       this.forceVectors = [];
       this.touched = false;
+      this.even = false;
     }
   
     edges() {
@@ -34,14 +37,16 @@ class Boid {
     }
   
     align(boids) {
-      let perceptionRadius = 50;
+      let perceptionRadius = this.directionalPerceptionRadius;
       let steering = createVector();
       let total = 0;
       for (let other of boids) {
         let d = dist(this.position.x, this.position.y, other.position.x, other.position.y);
         if (other != this && d < perceptionRadius) {
-          steering.add(other.velocity);
+          let accelVector = other.velocity.copy().div(this.maxSpeed).mult(this.avoidanceRadius / 2);
+          steering.add(accelVector);
           total++;
+          this.forceVectors.push([accelVector, [0 , 255, 255]]);
         }
       }
       if (total > 0) {
@@ -53,56 +58,76 @@ class Boid {
       return steering;
     }
   
-    separation(boids) {
+    symmetricPoint(point, center, radius, attraction = false) {
+      let diffVec = p5.Vector.sub(point, center);
+      let vecMag = p5.Vector.mag(diffVec);
+      // let correctedVec = diffVec.copy();
+      // diffVec.normalize();
+      // diffVec.mult(radius * radius / vecMag / vecMag);
+      if (attraction || vecMag < radius) {
+        diffVec.mult(radius * (radius - vecMag) / vecMag / vecMag);
+      } else {
+        return createVector();
+      }
+      // return [diffVec.add(center), correctedVec.add(center)];
+      return diffVec;
+    }
+
+    separation(boids, attraction = true) {
       // let perceptionRadius = 50;
       let steering = createVector();
-      // let total = 0;
+      let total = 0;
 
       for (let other of boids) {
         let distance = dist(this.position.x, this.position.y, other.position.x, other.position.y);
-        let avoidanceRadius = this.comfortZone + other.radius;
-        if (other != this && distance < avoidanceRadius) {
-          let diffVec = p5.Vector.sub(this.position, other.position);
-          diffVec.div(distance * distance);
-          // now it's length is 1 / distance
-          diffVec.mult(avoidanceRadius);
-          // Now multiplied by radius
-          steering.add(diffVec);
+
+        if (other != this && distance < this.perceptionRadius) {
+          // let diffVec = p5.Vector.sub(this.position, other.position);
+          // // todo the reflection does not work correctly
+          // diffVec.div(distance * distance);
+          // // now it's length is 1 / distance
+          // diffVec.mult(this.avoidanceRadius);
+          // // Now multiplied by radius
+
+          let diffVec = this.symmetricPoint(this.position, other.position, this.avoidanceRadius, attraction);
+
           this.forceVectors.push([diffVec, [255, 0, 0]]);
-          // total++;
-        }
-      }
-      // if (total > 0) {
-      //   steering.div(total);
-      //   // steering.setMag(this.maxSpeed);
-      //   // steering.sub(this.velocity);
-      //   // steering.limit(this.maxForce);
-      // }
-      return steering;
-    }
-  
-    cohesion(boids) {
-      const perceptionRadius = this.perceptionRadius;
-      let steering = createVector();
-      let total = 0;
-      for (let other of boids) {
-        let d = dist(this.position.x, this.position.y, other.position.x, other.position.y);
-        if (other != this && d < perceptionRadius) {
-          steering.add(other.position);
+
+          steering.add(diffVec);
           total++;
-          other.touched = true;
         }
       }
       if (total > 0) {
         steering.div(total);
-        steering.sub(this.position);
         // steering.setMag(this.maxSpeed);
         // steering.sub(this.velocity);
         // steering.limit(this.maxForce);
       }
-      this.forceVectors.push([steering, [255, 255, 0]]);
       return steering;
     }
+  
+    // cohesion(boids) {
+    //   const perceptionRadius = this.perceptionRadius;
+    //   let steering = createVector();
+    //   let total = 0;
+    //   for (let other of boids) {
+    //     let d = dist(this.position.x, this.position.y, other.position.x, other.position.y);
+    //     if (other != this && d < perceptionRadius) {
+    //       steering.add(other.position);
+    //       total++;
+    //       other.touched = true;
+    //     }
+    //   }
+    //   if (total > 0) {
+    //     steering.div(total);
+    //     steering.sub(this.position);
+    //     // steering.setMag(this.maxSpeed);
+    //     // steering.sub(this.velocity);
+    //     // steering.limit(this.maxForce);
+    //   }
+    //   this.forceVectors.push([steering, [255, 255, 0]]);
+    //   return steering;
+    // }
   
     flock(boids) {
       this.maxSpeed = maxSpeedSlider.value();
@@ -112,19 +137,24 @@ class Boid {
       this.forceVectors = [];
 
       let alignment = this.align(boids);
-      let cohesion = this.cohesion(boids);
+      // let cohesion = this.cohesion(boids);
       let separation = this.separation(boids);
   
       alignment.mult(alignSlider.value());
-      cohesion.mult(cohesionSlider.value());
+      // cohesion.mult(cohesionSlider.value());
       separation.mult(separationSlider.value());
   
       this.acceleration.add(alignment);
-      this.acceleration.add(cohesion);
+      // this.acceleration.add(cohesion);
       this.acceleration.add(separation);
     }
   
     update() {
+      this.position.add(this.velocity);
+
+      this.velocity.add(this.acceleration);
+      this.velocity.limit(this.maxSpeed);
+
       let absVelocity = this.velocity.mag();
       if (absVelocity < this.minSpeed) {
         const speedUpVector = this.velocity.copy().normalize().mult(this.minSpeed / 2)
@@ -133,18 +163,57 @@ class Boid {
       }
       this.acceleration.limit(this.maxForce);
       
-      this.velocity.add(this.acceleration);
-      this.velocity.limit(this.maxSpeed);
-      this.position.add(this.velocity);
       this.acceleration.mult(0);
     }
   
-    show() {
-
-      stroke(255);
+    show(drawAuxiliary = false) {
       push();
+
       translate(this.position.x, this.position.y);
       rotate(atan2(this.velocity.y, this.velocity.x));
+
+      this.drawFireHelicopter();
+      if (drawAuxiliary) {
+        this.drawAuxiliaryLocal();
+      }
+
+      pop();
+
+      if (drawAuxiliary) {
+        this.drawAuxiliaryGlobal();
+      }
+      
+      this.even = !this.even;
+    }
+
+    drawFireHelicopter(){
+      stroke(255, 0, 0);
+      fill(125);
+      triangle(0, 2, 0, -2, -this.radius*2, 0);
+      ellipse(0, 0, this.radius * 2, 4);
+      // blades
+      strokeWeight(1);
+      stroke(127);
+      // front
+      const bladeRadius = (this.comfortZone + this.radius) / 2;
+      let bladeAngle = 1.0;
+      if (this.even) {
+        bladeAngle += 1;
+      } 
+      const n = 4;
+      for (let i = 0; i < n; i++) {
+        line(0, 0, bladeRadius * cos(bladeAngle + i * 2 * PI / n), bladeRadius * sin(bladeAngle + i * 2 * PI / n));
+      }
+      // // back
+      // if (this.even) {
+      //   line(-8, 1, -this.radius*2-2, 1);
+      // }else{
+      //   line(-8-1, 1, -this.radius*2-2+1, 1);
+      // }
+    }
+
+    drawBird(){
+      stroke(255);
       // scale(5);
       // body
       strokeWeight(1);
@@ -169,6 +238,9 @@ class Boid {
       stroke(255,0,0);
       // strokeWeight(1);
       point(1, 0);
+    }
+
+    drawAuxiliaryLocal(){
       // point(this.position.x, this.position.y);
       stroke(0, 255, 0);
       strokeWeight(1);
@@ -179,6 +251,7 @@ class Boid {
       else{
         stroke(255, 0, 0, 50);
       }
+
       strokeWeight(1);
       noFill();
       ellipse(0, 0, (this.comfortZone + this.radius));
@@ -188,9 +261,14 @@ class Boid {
         strokeWeight(1);
         noFill();
         ellipse(0, 0, (this.perceptionRadius)*2 - this.comfortZone - this.radius);
+
+        stroke(0, 255, 255, 100);
+        ellipse(0, 0, (this.directionalPerceptionRadius)*2 - this.comfortZone - this.radius);
       }
 
-      pop();
+    }
+
+    drawAuxiliaryGlobal(){
 
       // auxiliary visualization of force vectors
       strokeWeight(1);
@@ -199,9 +277,10 @@ class Boid {
         let colorPart = forceVector[1];
         stroke(colorPart);
         line(this.position.x, this.position.y, 
-          this.position.x + forcePart.x*5, this.position.y + forcePart.y*5 );
+          this.position.x + forcePart.x*10, this.position.y + forcePart.y*10);
       }
       this.touched = false;
     }
+
   }
   
