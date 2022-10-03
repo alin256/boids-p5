@@ -25,6 +25,7 @@ class Boid {
       this.forceVectors = [];
       this.touched = false;
       this.even = false;
+      this.bladePosition = random(0, 1);
     }
   
     edges() {
@@ -194,19 +195,20 @@ class Boid {
       fill(125);
       triangle(0, 2, 0, -2, -this.radius*2, 0);
       ellipse(0, 0, this.radius * 2, 4);
+      noStroke();
+      fill(0,250,250);
+      ellipse(4, 0, 1, 3);
       // blades
       strokeWeight(1);
       stroke(127);
       // front
       const bladeRadius = (this.comfortZone + this.radius) / 2;
-      let bladeAngle = 1.0;
-      if (this.even) {
-        bladeAngle += 1;
-      } 
+      const bladeAngle = this.bladePosition;
       const n = 4;
       for (let i = 0; i < n; i++) {
         line(0, 0, bladeRadius * cos(bladeAngle + i * 2 * PI / n), bladeRadius * sin(bladeAngle + i * 2 * PI / n));
       }
+      this.bladePosition += max(random(PI/12, PI/13), this.velocity.mag() / bladeRadius * 2);
       // // back
       // if (this.even) {
       //   line(-8, 1, -this.radius*2-2, 1);
